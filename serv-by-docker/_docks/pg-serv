@@ -1,37 +1,20 @@
 #!/bin/bash
 
-usage()
-{
-    local cmd=$(basename $0)
-    cat << EOF
-usage:
-    $cmd <sub-command>
+storage_dir=~/data/pg/01
+pg_password=postgres
 
-sub-command:
-    create
-        create docker container
-
-    container-name
-        show container name
-EOF
-    exit 1
-}
-
-cmd=$1
-container_name=pg-01
-
-[ -z $cmd ] && usage
+export CMD_NAME=$(basename $0)
+export CONTAINER_NAME=pg-01
+export DOCKER_RUN="
+    docker run -d \
+        --name $CONTAINER_NAME \
+        --env POSTGRES_PASSWORD=$pg_password \
+        -p 5432:5432 \
+        -v $storage_dir:/var/lib/postgresql/data \
+        postgres:14.2
+"
 
 self_dir=$(cd $(dirname $0) && pwd)
 
-case $cmd in
-    create)
-        docker run --name $container_name --env POSTGRES_PASSWORD=postgres -p 5432:5432 -d "postgres:14.2"
-        ;;
-    container-name)
-        echo $container_name
-        ;;
-    *)
-        ;;
-esac
+$self_dir/serv-base "$@"
 
