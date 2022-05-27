@@ -1,0 +1,18 @@
+#!/bin/bash
+
+storage_dir=~/data/redis/01
+
+export CMD_NAME="$(basename $0)"
+export CONTAINER_NAME=redis-01
+export DOCKER_RUN="
+    docker run -d \
+        --name $CONTAINER_NAME \
+        -p 6379:6379 \
+        -v $storage_dir:/data \
+        redis:7.0 redis-server --save 60 1 --loglevel warning
+"
+
+self_dir=$(cd $(dirname $0) && pwd)
+
+$self_dir/serv-base "$@"
+

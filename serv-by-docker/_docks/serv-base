@@ -1,0 +1,38 @@
+#!/bin/bash
+
+# CMD_NAME - command name
+# DOCKER_RUN - docker run command detail 
+# CONTAINER_NAME - name of container
+
+usage()
+{
+    local cmd=$CMD_NAME
+    cat << EOF
+usage:
+    $cmd <sub-command>
+
+sub-command:
+    create
+        create docker container
+
+    container-name
+        show container name
+EOF
+    exit 1
+}
+
+cmd=$1
+
+[ -z $cmd ] && usage
+
+case $cmd in
+    create)
+        bash -c "$DOCKER_RUN"
+        ;;
+    container-name)
+        echo $CONTAINER_NAME
+        ;;
+    *)
+        ;;
+esac
+
