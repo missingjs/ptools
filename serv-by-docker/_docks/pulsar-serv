@@ -1,0 +1,48 @@
+#!/bin/bash
+
+usage()
+{
+    local cmd=$(basename $0)
+    cat << EOF
+usage:
+    $cmd <sub-command>
+
+sub-command:
+    create
+        create docker container
+
+    container-name
+        show container name
+EOF
+    exit 1
+}
+
+cmd=$1
+container_name=pulsar-01
+
+[ -z $cmd ] && usage
+
+self_dir=$(cd $(dirname $0) && pwd)
+
+create_container()
+{
+    docker run -itd \
+        --name $container_name \
+        -p 6650:6650 \
+        -p 8080:8080 \
+        -v ~/data/pulsar/01:/pulsar/data \
+        apachepulsar/pulsar:latest \
+        bin/pulsar standalone
+}
+
+case $cmd in
+    create)
+        create_container
+        ;;
+    container-name)
+        echo $container_name
+        ;;
+    *)
+        ;;
+esac
+

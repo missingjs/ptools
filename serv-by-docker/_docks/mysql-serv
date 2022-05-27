@@ -1,0 +1,37 @@
+#!/bin/bash
+
+usage()
+{
+    local cmd=$(basename $0)
+    cat << EOF
+usage:
+    $cmd <sub-command>
+
+sub-command:
+    create
+        create docker container
+
+    container-name
+        show container name
+EOF
+    exit 1
+}
+
+cmd=$1
+container_name=mysql-01
+
+[ -z $cmd ] && usage
+
+self_dir=$(cd $(dirname $0) && pwd)
+
+case $cmd in
+    create)
+        docker run --name $container_name --env MYSQL_ROOT_PASSWORD=root -p 3306:3306 -d "mysql:8.0"
+        ;;
+    container-name)
+        echo $container_name
+        ;;
+    *)
+        ;;
+esac
+
