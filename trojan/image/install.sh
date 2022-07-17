@@ -88,5 +88,5 @@ os.rename(save_file, trojan_config)
 
 python3 -c "$pycode" "$password"
 
-certbot certonly --standalone --email "$email" --agree-tos --no-eff-email -d "$domain"
+# certbot certonly --standalone --email "$email" --agree-tos --no-eff-email -d "$domain"
 
