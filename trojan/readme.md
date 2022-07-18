@@ -4,5 +4,6 @@
 * build image: `./build.sh`
 * register cert (first time): `./cert.sh register`
 * create service container: `./control.sh create`
-* renew certificate: `./cert.sh renew`
-* restart trojan service: `./control.sh restart`
+
+# Setup auto renew certificate
+* renew certificate: `./cert.sh renew`, restart trojan service: `./control.sh restart`, invoke these commands in crontab every two months
