@@ -7,3 +7,6 @@ domain_name=
 # password for trojan client
 client_passwords=()
 
+# email to register letsencrypt
+email=
+

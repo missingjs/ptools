@@ -9,7 +9,7 @@ source setup_env.sh || exit
 function config_missing()
 {
     local name=$1
-    echo "$1 not configured"
+    echo "$1 not configured" >&2
     exit 1
 }
 
