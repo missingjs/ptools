@@ -37,6 +37,7 @@ function setup_web_content()
 {
     [ -e $index_file ] || find_web_content
     local source_dir=$(python3 -c "import random; fp=open('$index_file'); print(random.choice(fp.readlines()).strip()); fp.close()")
+    echo "choose $source_dir"
     rm -rf $dest_dir/* || exit
     cp -r $source_dir/* $dest_dir/
 }
