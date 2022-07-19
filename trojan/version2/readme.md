@@ -50,15 +50,7 @@ $ docker compose down
 $ ./cert.sh renew
 ```
 
-You can renew certificate every two months. Nomally through crontab, just like below.
-
-```
-PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
-SHELL=/bin/bash
-0 0 1 */2 * cd <PROJECT-DIR>; ./cert.sh renew; docker compose restart -t 10 trojan
-```
-
-Please remember to replace `<PROJECT-DIR>` with the project's real path.
+You can renew certificate every two months. Nomally through crontab. See [Setup crontab](#Setup crontab)
 
 ## Setup web content
 
@@ -73,4 +65,12 @@ $ ./webcont.sh setup
 ```
 
 You can call this command from crontab. The program will choose one site randomly, then copy all contents to `$volume_directory/var/www/html/`, where the nginx server can access.
+
+## Setup crontab
+
+```bash
+$ ./cron-setup.sh
+```
+
+It'll append job to crontab file, so you'd better check it manually after this script executed.
 
