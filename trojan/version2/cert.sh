@@ -12,14 +12,8 @@ EOF
 self_dir=$(cd $(dirname $0) && pwd)
 
 cd $self_dir
+source common.sh || exit
 source setup_env.sh || exit
-
-function config_missing()
-{
-    local name=$1
-    echo "$1 not configured" >&2
-    exit 1
-}
 
 [ -z $domain_name ] && config_missing domain_name
 [ -z $email ] && config_missing email
