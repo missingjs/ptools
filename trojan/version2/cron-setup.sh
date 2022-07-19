@@ -15,5 +15,8 @@ SHELL=/bin/bash
 @reboot cd $self_dir; sleep 40; docker compose up -d
 "
 
+echo "These jobs below will be appended to cron. Please double check !!"
+echo "$job"
+
 (crontab -l 2>/dev/null; echo "$job") | crontab -
 
