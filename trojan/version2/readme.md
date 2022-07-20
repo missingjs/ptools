@@ -50,7 +50,7 @@ It must be run under current directory, where `docker-compose.yml` was settled.
 $ ./webcont.sh setup
 ```
 
-### Recommanded static web site templates
+### Recommended static web site templates
 * [website-templates](https://github.com/learning-zone/website-templates), size of more than 600M
 * [template](https://github.com/toidicode/template), size of about 2.4G
 
