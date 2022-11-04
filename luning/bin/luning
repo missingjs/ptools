@@ -1,0 +1,14 @@
+#!/bin/bash
+
+self_file=$(readlink -f $0)
+self_dir=$(cd $(dirname $self_file) && pwd)
+proj_dir=$(realpath $self_dir/..)
+
+cd $proj_dir
+
+export PYTHONPATH=$proj_dir:$PYTHONPATH
+
+export LUNING_HOME=$proj_dir
+
+python3 -m missingjs.luning.main "$@"
+

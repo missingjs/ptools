@@ -1,0 +1,7 @@
+image: postgres:14.2
+options:
+  - --env POSTGRES_PASSWORD=postgres
+  - -p 5432:5432
+mount_volumes:
+  - "${data_dir}:/var/lib/postgresql/data"
+cmd: ''
