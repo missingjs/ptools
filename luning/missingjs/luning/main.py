@@ -82,7 +82,7 @@ def start_container(name):
 
 
 def is_container_exists(name):
-    command = f"docker ps -a | grep -P 'name=^{name}$'"
+    command = f"docker ps -aq -f 'name=^{name}$' | grep ."
     return subprocess.run(command, shell=True, capture_output=True).returncode == 0
 
 
