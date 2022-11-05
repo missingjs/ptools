@@ -4,4 +4,4 @@ options:
   - -p 5432:5432
 mount_volumes:
   - "${data_dir}:/var/lib/postgresql/data"
-cmd: ''
+cmd: ""

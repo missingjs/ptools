@@ -1,0 +1,6 @@
+image: redis:7.0
+options:
+  - -p 6379:6379
+mount_volumes:
+  - "${data_dir}:/data"
+cmd: "redis-server --save 60 1 --loglevel warning"
