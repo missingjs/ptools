@@ -1,0 +1,7 @@
+image: mysql:8.0
+options:
+  - --env MYSQL_ROOT_PASSWORD=root
+  - -p 3306:3306
+mount_volumes:
+  - "${data_dir}:/var/lib/mysql"
+cmd: ""
