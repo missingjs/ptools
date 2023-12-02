@@ -103,6 +103,7 @@ version: "3.9"
 services:
   $nginx_service_domain:
     image: nginx:latest
+    init: true
     network_mode: host
     ports:
       - "80:80"
@@ -111,6 +112,7 @@ services:
       - $VDir/var/www/html:/var/www/html:ro
   trojan:
     image: trojangfw/trojan:latest
+    init: true
     network_mode: host
     ports:
       - "443:443"
