@@ -33,7 +33,7 @@ $ ./cert.sh register
 ## Start service
 
 ```bash
-$ docker compose up -d
+$ ./service.sh up -d
 ```
 
 It must be run under current directory, where `docker-compose.yml` was settled.
@@ -71,7 +71,7 @@ These commands will be executed in scripts introduced in previous chapters. Norm
 ## Stop service
 
 ```bash
-$ docker compose down
+$ ./service.sh down
 ```
 
 ## Renew certificate
