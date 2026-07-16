@@ -43,7 +43,7 @@ _refresh_lock = asyncio.Lock()
 
 async def run_command_async() -> dict[str, Any]:
     process = await asyncio.create_subprocess_shell(
-        "netstat -apn | grep :443 | grep ESTABLISHED | awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | sort -nrk 1 | head",
+        "netstat -4 -ant | grep :443 | grep ESTABLISHED | awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | sort -nrk 1 | head",
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
