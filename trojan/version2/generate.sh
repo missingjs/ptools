@@ -119,6 +119,12 @@ services:
     volumes:
       - $VDir/etc/letsencrypt:/etc/letsencrypt:ro
       - $VDir/config:/config:ro
+  trojan-monitor:
+    build:
+      context: ./monitor
+    init: true
+    network_mode: host
+    depends_on:
+      - trojan
 EOF
 echo "DONE docker-compose.yml"
-
