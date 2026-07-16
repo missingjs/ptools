@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from pydantic import BaseModel
 
 
@@ -157,3 +157,8 @@ async def connection_count() -> CommandResult:
         **data,
         cached=cached,
     )
+
+
+@app.get("/request-info")
+async def request_info(request: Request) -> dict[str, dict[str, str]]:
+    return {"headers": dict(request.headers)}
