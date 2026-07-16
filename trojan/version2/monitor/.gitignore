@@ -1,0 +1,5 @@
+.pypy_cache
+.ruff_cache
+.venv
+.*.swp
+*.pyc

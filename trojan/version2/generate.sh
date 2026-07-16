@@ -37,12 +37,29 @@ nginx_service_domain=nginx-server
 
 # nginx default site config
 nginx_default=$volume_directory/etc/nginx/conf.d/default.conf
-cat >$nginx_default << EOF
+cat >$nginx_default << 'EOF'
 server {
     listen 127.0.0.1:80 default_server;
     root /var/www/html;
     index index.html index.htm index.nginx-debian.html;
     server_name _;
+
+    location = /monitor {
+        return 301 /monitor/;
+    }
+
+    location ^~ /monitor/ {
+        proxy_pass http://127.0.0.1:8000/;
+
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
     location / {
         try_files \$uri \$uri/ =404;
     }
@@ -119,6 +136,12 @@ services:
     volumes:
       - $VDir/etc/letsencrypt:/etc/letsencrypt:ro
       - $VDir/config:/config:ro
+  trojan-monitor:
+    build:
+      context: ./monitor
+    init: true
+    network_mode: host
+    depends_on:
+      - trojan
 EOF
 echo "DONE docker-compose.yml"
-
