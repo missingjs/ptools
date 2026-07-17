@@ -127,6 +127,11 @@ services:
     volumes:
       - $VDir/etc/nginx/conf.d:/etc/nginx/conf.d:ro
       - $VDir/var/www/html:/var/www/html:ro
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: "20m"
   trojan:
     image: trojangfw/trojan:latest
     init: true
@@ -136,6 +141,11 @@ services:
     volumes:
       - $VDir/etc/letsencrypt:/etc/letsencrypt:ro
       - $VDir/config:/config:ro
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: "20m"
   trojan-monitor:
     build:
       context: ./monitor
@@ -143,5 +153,10 @@ services:
     network_mode: host
     depends_on:
       - trojan
+    logging:
+      driver: json-file
+      options:
+        max-file: "5"
+        max-size: "20m"
 EOF
 echo "DONE docker-compose.yml"
