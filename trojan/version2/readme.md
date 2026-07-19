@@ -5,6 +5,16 @@
 * [install docker](https://docs.docker.com/engine/install/ubuntu/)
 * [install docker compose](https://docs.docker.com/compose/install/compose-plugin/#installing-compose-on-linux-systems)
 
+## Build trojan image
+
+Clone the `trojan` repo from `https://github.com/missingjs/trojan.git`. This is a private repository, so a personal access token is needed.
+
+```bash
+gh repo clone missingjs/trojan /path/of/other/place
+```
+
+Build the image with name `local/trojan`. It will be needed in the docker-compose.yml (generated in later steps).
+
 ## Prepare configuartion
 1. **create config script**
 
@@ -12,9 +22,9 @@
 $ cp _setup_env.sh setup_env.sh
 ```
 
-2. **edit**
+2. **edit as you need**
 
-## generate docker compose file
+## Generate docker compose file
 
 ```bash
 $ ./generate.sh

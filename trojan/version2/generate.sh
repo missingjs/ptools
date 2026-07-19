@@ -39,10 +39,14 @@ nginx_service_domain=nginx-server
 nginx_default=$volume_directory/etc/nginx/conf.d/default.conf
 cat >$nginx_default << 'EOF'
 server {
-    listen 127.0.0.1:80 default_server;
+    listen 127.0.0.1:80 proxy_protocol default_server;
     root /var/www/html;
     index index.html index.htm index.nginx-debian.html;
     server_name _;
+
+    set_real_ip_from 127.0.0.1;
+    set_real_ip_from ::1;
+    real_ip_header proxy_protocol;
 
     location = /monitor {
         return 301 /monitor/;
@@ -61,7 +65,7 @@ server {
     }
 
     location / {
-        try_files \$uri \$uri/ =404;
+        try_files $uri $uri/ =404;
     }
 }
 EOF
@@ -133,7 +137,7 @@ services:
         max-file: "5"
         max-size: "20m"
   trojan:
-    image: trojangfw/trojan:latest
+    image: local/trojan:latest
     init: true
     network_mode: host
     ports:
