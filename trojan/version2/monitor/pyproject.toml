@@ -13,6 +13,12 @@ dev = [
     "ruff>=0.15.21",
 ]
 
+[tool.ruff]
+line-length = 90
+
+[tool.ruff.lint]
+extend-select = ["E501"]
+
 [tool.mypy]
 python_version = "3.14"
 files = ["."]

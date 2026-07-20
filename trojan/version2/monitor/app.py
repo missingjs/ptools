@@ -43,7 +43,11 @@ _refresh_lock = asyncio.Lock()
 
 async def run_command_async() -> dict[str, Any]:
     process = await asyncio.create_subprocess_shell(
-        "netstat -4 -ant | grep :443 | grep ESTABLISHED | awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | sort -nrk 1 | head",
+        (
+            "netstat -4 -ant | grep :443 | grep ESTABLISHED | "
+            "awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | "
+            "sort -nrk 1 | head"
+        ),
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -60,16 +64,17 @@ async def run_command_async() -> dict[str, Any]:
 
     if process.returncode != 0:
         raise RuntimeError(
-            f"Command failed with code {process.returncode}: "
-            f"{stderr.decode().strip()}"
+            f"Command failed with code {process.returncode}: {stderr.decode().strip()}"
         )
 
     def line_to_connection_stat(line: str) -> ConnectionStat:
-        match line.strip().split(' '):
+        match line.strip().split(" "):
             case [count_s, client_ip]:
                 return ConnectionStat(count=int(count_s), client_ip=client_ip)
             case _:
-                raise ValueError(f"Unable to parse ConnectionStat from string: {line.strip()}")
+                raise ValueError(
+                    f"Unable to parse ConnectionStat from string: {line.strip()}"
+                )
 
     items = [
         line_to_connection_stat(line)
@@ -79,15 +84,12 @@ async def run_command_async() -> dict[str, Any]:
 
     return {
         "items": items,
-        "generated_at": datetime.fromtimestamp(time.time(), tz=timezone.utc)
+        "generated_at": datetime.fromtimestamp(time.time(), tz=timezone.utc),
     }
 
 
 def cache_is_valid(now: float) -> bool:
-    return (
-        _cache is not None
-        and now - _cache.created_at < CACHE_TTL_SECONDS
-    )
+    return _cache is not None and now - _cache.created_at < CACHE_TTL_SECONDS
 
 
 async def get_command_result() -> tuple[dict[str, Any], bool]:
