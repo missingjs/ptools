@@ -1,5 +1,3 @@
-# app.py
-
 import asyncio
 import subprocess
 import time
@@ -41,13 +39,9 @@ _cache: CacheEntry | None = None
 _refresh_lock = asyncio.Lock()
 
 
-async def run_command_async() -> dict[str, Any]:
+async def capture_shell_output(command: str) -> str:
     process = await asyncio.create_subprocess_shell(
-        (
-            "netstat -4 -ant | grep :443 | grep ESTABLISHED | "
-            "awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | "
-            "sort -nrk 1 | head"
-        ),
+        command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -67,6 +61,18 @@ async def run_command_async() -> dict[str, Any]:
             f"Command failed with code {process.returncode}: {stderr.decode().strip()}"
         )
 
+    return stdout.decode()
+
+
+async def run_command_async() -> dict[str, Any]:
+    stdout = await capture_shell_output(
+        (
+            "netstat -4 -ant | grep :443 | grep ESTABLISHED | "
+            "awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | "
+            "sort -nrk 1 | head"
+        )
+    )
+
     def line_to_connection_stat(line: str) -> ConnectionStat:
         match line.strip().split(" "):
             case [count_s, client_ip]:
@@ -77,9 +83,7 @@ async def run_command_async() -> dict[str, Any]:
                 )
 
     items = [
-        line_to_connection_stat(line)
-        for line in stdout.decode().splitlines()
-        if line.strip()
+        line_to_connection_stat(line) for line in stdout.splitlines() if line.strip()
     ]
 
     return {
