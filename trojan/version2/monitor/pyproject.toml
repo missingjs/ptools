@@ -3,6 +3,7 @@ name = "monitor"
 version = "0.1.0"
 requires-python = ">=3.14,<3.15"
 dependencies = [
+    "async-lru",
     "fastapi",
     "uvicorn",
 ]
@@ -12,6 +13,12 @@ dev = [
     "mypy>=2.3.0",
     "ruff>=0.15.21",
 ]
+
+[tool.ruff]
+line-length = 90
+
+[tool.ruff.lint]
+extend-select = ["E501"]
 
 [tool.mypy]
 python_version = "3.14"

@@ -1,49 +1,71 @@
-# app.py
-
 import asyncio
+import json
+import logging
 import subprocess
 import time
-from dataclasses import dataclass
+from collections.abc import Collection
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, override
 
+from async_lru import alru_cache
 from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
+# In this project, using uvicorn.error is a pragmatic choice
+# because Uvicorn has already configured its handler
+logger = logging.getLogger("uvicorn.error")
 
-CACHE_TTL_SECONDS = 10.0
+
 COMMAND_TIMEOUT_SECONDS = 1.0
 
 
-class ConnectionStat(BaseModel):
-    client_ip: str
+class IpAddressCountItem(BaseModel):
+    ip: str
     count: int
 
 
-class CommandResult(BaseModel):
-    items: list[ConnectionStat]
+class ConnectionStateCountItem(BaseModel):
+    state: str
+    count: int
+
+
+class IncomingConnectionCountItem(BaseModel):
+    port: int
+    count: int
+
+
+class StatusOverview(BaseModel):
+    server_port: int
+    current_client_ip: str
+    total_connections: int
+    connection_state_counts: list[ConnectionStateCountItem]
+    client_ip_counts: list[IpAddressCountItem]
+    incoming_connection_counts: list[IncomingConnectionCountItem]
     generated_at: datetime
-    cached: bool
 
 
-@dataclass
-class CacheEntry:
-    data: dict[str, Any]
-    created_at: float
+class PrettyJSONResponse(JSONResponse):
+    @override
+    def render(self, content: Any) -> bytes:
+        return json.dumps(
+            content,
+            ensure_ascii=False,
+            allow_nan=False,
+            indent=2,
+        ).encode("utf-8")
 
 
 app = FastAPI()
 
-# This state belongs only to the current Python process.
-_cache: CacheEntry | None = None
 
-# Prevent multiple coroutines from refreshing the cache simultaneously.
-_refresh_lock = asyncio.Lock()
-
-
-async def run_command_async() -> dict[str, Any]:
+async def capture_shell_output(
+    command: str,
+    *,
+    allowed_return_codes: Collection[int] = (0,),
+) -> str:
     process = await asyncio.create_subprocess_shell(
-        "netstat -4 -ant | grep :443 | grep ESTABLISHED | awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | sort -nrk 1 | head",
+        command,
         stdout=asyncio.subprocess.PIPE,
         stderr=asyncio.subprocess.PIPE,
     )
@@ -58,78 +80,131 @@ async def run_command_async() -> dict[str, Any]:
         await process.wait()
         raise
 
-    if process.returncode != 0:
+    if process.returncode not in allowed_return_codes:
         raise RuntimeError(
-            f"Command failed with code {process.returncode}: "
-            f"{stderr.decode().strip()}"
+            f"Command failed with code {process.returncode}: {stderr.decode().strip()}"
         )
 
-    def line_to_connection_stat(line: str) -> ConnectionStat:
-        match line.strip().split(' '):
-            case [count_s, client_ip]:
-                return ConnectionStat(count=int(count_s), client_ip=client_ip)
-            case _:
-                raise ValueError(f"Unable to parse ConnectionStat from string: {line.strip()}")
+    return stdout.decode()
 
-    items = [
-        line_to_connection_stat(line)
-        for line in stdout.decode().splitlines()
-        if line.strip()
+
+async def get_client_ip_counts(
+    server_port: int, limit: int = 10
+) -> list[IpAddressCountItem]:
+    if limit <= 0:
+        raise ValueError(f"Invalid limit: {limit}. It must be a positive integer")
+
+    command = (
+        f"netstat -4 -ant | grep ':{server_port} ' | grep ESTABLISHED | "
+        "awk '{print $5}' | cut -d : -f 1 | sort | uniq -c | "
+        f"sort -nrk 1 | head -n {limit}"
+    )
+
+    stdout = await capture_shell_output(command, allowed_return_codes=(0, 1))
+
+    def line_to_ip_count(line: str) -> IpAddressCountItem:
+        match line.strip().split(" "):
+            case [count_s, client_ip]:
+                return IpAddressCountItem(count=int(count_s), ip=client_ip)
+            case _:
+                raise ValueError(
+                    f"Unable to parse IpAddressCountItem from string: {line.strip()}"
+                )
+
+    return [line_to_ip_count(line) for line in stdout.splitlines() if line.strip()]
+
+
+async def get_incoming_connection_counts(
+    limit: int = 10,
+) -> list[IncomingConnectionCountItem]:
+    if limit <= 0:
+        raise ValueError(f"Invalid limit: {limit}. It must be a positive integer")
+
+    command = (
+        "netstat -4 -ant | grep ^tcp | grep -v LISTEN | awk '{print $4}' | "
+        f"cut -d : -f 2 | sort | uniq -c | sort -nrk 1 | head -n {limit}"
+    )
+
+    stdout = await capture_shell_output(command, allowed_return_codes=(0, 1))
+
+    def line_to_incoming_conn_count(line: str) -> IncomingConnectionCountItem:
+        match line.strip().split(" "):
+            case [count_s, server_port]:
+                return IncomingConnectionCountItem(
+                    count=int(count_s), port=int(server_port)
+                )
+            case _:
+                raise ValueError(
+                    "Unable to parse IncomingConnectionCountItem from string: "
+                    f"{line.strip()}"
+                )
+
+    return [
+        line_to_incoming_conn_count(line) for line in stdout.splitlines() if line.strip()
     ]
 
-    return {
-        "items": items,
-        "generated_at": datetime.fromtimestamp(time.time(), tz=timezone.utc)
-    }
+
+async def get_total_connections(server_port: int) -> int:
+    command = f"netstat -4 -ant | grep -c ':{server_port} '"
+    stdout = await capture_shell_output(command, allowed_return_codes=(0, 1))
+    return int(stdout)
 
 
-def cache_is_valid(now: float) -> bool:
-    return (
-        _cache is not None
-        and now - _cache.created_at < CACHE_TTL_SECONDS
+async def get_connection_state_counts(server_port: int) -> list[ConnectionStateCountItem]:
+    stdout = await capture_shell_output(
+        f"netstat -4 -ant | grep ':{server_port} ' | "
+        "awk '{print $6}' | sort | uniq -c | sort -nrk 1",
+        allowed_return_codes=(0, 1),
+    )
+
+    def line_to_connection_state(line: str) -> ConnectionStateCountItem:
+        match line.strip().split(" "):
+            case [count_s, connection_state]:
+                return ConnectionStateCountItem(
+                    count=int(count_s), state=connection_state
+                )
+            case _:
+                raise ValueError(
+                    "Unable to parse ConnectionStateCountItem from string: "
+                    f"{line.strip()}"
+                )
+
+    return [
+        line_to_connection_state(line) for line in stdout.splitlines() if line.strip()
+    ]
+
+
+@alru_cache(maxsize=1, ttl=10)
+async def get_server_status_overview(server_port: int) -> StatusOverview:
+    total_connections = await get_total_connections(server_port)
+    connection_state_counts = await get_connection_state_counts(server_port)
+    client_ip_counts = await get_client_ip_counts(server_port, limit=10)
+    incoming_connection_counts = await get_incoming_connection_counts(limit=10)
+    return StatusOverview(
+        server_port=server_port,
+        current_client_ip="",
+        total_connections=total_connections,
+        connection_state_counts=connection_state_counts,
+        client_ip_counts=client_ip_counts,
+        incoming_connection_counts=incoming_connection_counts,
+        generated_at=datetime.fromtimestamp(time.time(), tz=timezone.utc),
     )
 
 
-async def get_command_result() -> tuple[dict[str, Any], bool]:
-    """
-    Return:
-        (result data, whether it came from the cache)
-    """
-
-    global _cache
-
-    now = time.monotonic()
-
-    # First check: no lock is needed when the cache is valid.
-    if cache_is_valid(now):
-        assert _cache is not None
-        return _cache.data, True
-
-    async with _refresh_lock:
-        # Second check:
-        # Another request may have completed the refresh while we waited for the lock.
-        now = time.monotonic()
-
-        if cache_is_valid(now):
-            assert _cache is not None
-            return _cache.data, True
-
-        # Run the synchronous blocking command in a thread.
-        # data = await asyncio.to_thread(run_command_and_process_output)
-        data = await run_command_async()
-
-        _cache = CacheEntry(
-            data=data,
-            created_at=time.monotonic(),
-        )
-
-        return data, False
+def get_client_ip(request: Request) -> str:
+    ip = request.headers.get("x-real-ip", None)
+    if ip is None:
+        ip = request.client.host if request.client else "***"
+    return ip
 
 
-@app.get("/connection-count", response_model=CommandResult)
-async def connection_count() -> CommandResult:
+@app.get("/overview", response_class=PrettyJSONResponse)
+async def status_overview(request: Request, port: int = 443) -> StatusOverview:
     try:
-        data, cached = await get_command_result()
+        overview = await get_server_status_overview(port)
+        current_client_ip = get_client_ip(request)
+        overview.current_client_ip = current_client_ip
+        return overview
     except subprocess.TimeoutExpired as exc:
         raise HTTPException(
             status_code=504,
@@ -152,13 +227,3 @@ async def connection_count() -> CommandResult:
             status_code=500,
             detail=f"Unable to execute command: {exc}",
         ) from exc
-
-    return CommandResult(
-        **data,
-        cached=cached,
-    )
-
-
-@app.get("/request-info")
-async def request_info(request: Request) -> dict[str, dict[str, str]]:
-    return {"headers": dict(request.headers)}
