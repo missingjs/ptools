@@ -137,7 +137,7 @@ services:
         max-file: "5"
         max-size: "20m"
   trojan:
-    image: local/trojan:latest
+    image: imissingjs/trojan:1.16.1
     init: true
     network_mode: host
     ports:
