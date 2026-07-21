@@ -39,7 +39,13 @@ nginx_service_domain=nginx-server
 nginx_default=$volume_directory/etc/nginx/conf.d/default.conf
 cat >$nginx_default << 'EOF'
 server {
-    listen 127.0.0.1:80 proxy_protocol default_server;
+    # accepts connection from trojan
+    listen 127.0.0.1:81 proxy_protocol default_server;
+
+    # accepts connection from localhost (for test)
+    listen 127.0.0.1:80;
+    listen [::1]:80;
+
     root /var/www/html;
     index index.html index.htm index.nginx-debian.html;
     server_name _;
@@ -74,20 +80,12 @@ echo "DONE $nginx_default"
 nginx_domain_site=$volume_directory/etc/nginx/conf.d/$domain_name.conf
 cat >$nginx_domain_site << EOF
 server {
-    listen 127.0.0.1:80;
-    root /var/www/html;
-    index index.html index.htm index.nginx-debian.html;
-    server_name $ip;
-    return 301 https://$domain_name\$request_uri;
-}
-
-server {
     listen 0.0.0.0:80;
     listen [::]:80;
     root /var/www/html;
     index index.html index.htm index.nginx-debian.html;
     server_name _;
-    return 301 https://\$host\$request_uri;
+    return 301 https://$domain_name\$request_uri;
 }
 EOF
 echo "DONE $nginx_domain_site"
@@ -104,6 +102,7 @@ with open(trojan_config, 'rt') as ifp:
     conf = json.load(ifp)
     conf['password'] = passwords
     conf['remote_addr'] = '127.0.0.1'
+    conf['remote_port'] = 81
     conf['ssl']['cert'] = '/etc/letsencrypt/live/$domain_name/fullchain.pem'
     conf['ssl']['key'] = '/etc/letsencrypt/live/$domain_name/privkey.pem'
 
@@ -126,8 +125,6 @@ services:
     image: nginx:latest
     init: true
     network_mode: host
-    ports:
-      - "80:80"
     volumes:
       - $VDir/etc/nginx/conf.d:/etc/nginx/conf.d:ro
       - $VDir/var/www/html:/var/www/html:ro
@@ -140,8 +137,6 @@ services:
     image: imissingjs/trojan:1.16.1
     init: true
     network_mode: host
-    ports:
-      - "443:443"
     volumes:
       - $VDir/etc/letsencrypt:/etc/letsencrypt:ro
       - $VDir/config:/config:ro
