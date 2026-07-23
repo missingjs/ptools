@@ -125,6 +125,10 @@ services:
     image: nginx:latest
     init: true
     network_mode: host
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     volumes:
       - $VDir/etc/nginx/conf.d:/etc/nginx/conf.d:ro
       - $VDir/var/www/html:/var/www/html:ro
@@ -137,6 +141,10 @@ services:
     image: imissingjs/trojan:1.16.1
     init: true
     network_mode: host
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     volumes:
       - $VDir/etc/letsencrypt:/etc/letsencrypt:ro
       - $VDir/config:/config:ro
@@ -150,6 +158,10 @@ services:
       context: ./monitor
     init: true
     network_mode: host
+    ulimits:
+      nofile:
+        soft: 65535
+        hard: 65535
     depends_on:
       - trojan
     logging:
