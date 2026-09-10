@@ -148,6 +148,7 @@ services:
     volumes:
       - $VDir/etc/nginx/conf.d:/etc/nginx/conf.d:ro
       - $VDir/var/www/html:/var/www/html:ro
+      - $VDir/var/www/local-resources:/var/www/local-resources:ro
     logging:
       driver: json-file
       options:
