@@ -21,6 +21,7 @@ echo "ip of $domain_name: $ip"
 dir_list="
 etc/nginx/conf.d
 var/www/html
+var/www/local-resources
 etc/letsencrypt
 var/lib/letsencrypt
 var/log/letsencrypt
@@ -75,6 +76,14 @@ server {
         if ($request_method = OPTIONS) {
             return 204;
         }
+    }
+
+    location = /z7 {
+        return 301 /z7/;
+    }
+
+    location ^~ /z7/ {
+        alias /var/www/local-resources/;
     }
 
     location / {
